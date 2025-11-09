@@ -6,8 +6,9 @@ import librosa.display
 from collections import Counter, defaultdict
 
 # --- Config ---
-SHOW_DB = True  # True -> plot in dB (easier to see); False -> linear power (good for feature pipelines)
+SHOW_DB = False  # True -> plot in dB (easier to see); False -> linear power (good for feature pipelines)
 audio_id : int = 0
+SHOW_VIZ = False
 
 audio_db = dict()
 hash_fingerprints = defaultdict(list) # (f2, f1, (t2-t1)) -> audio_id
@@ -126,7 +127,6 @@ def compute_constellations(spectrogram, WINDOW_SIZE):
 
 def filter_constellation(constellation, THRESH):
     sorted_constellation = sorted(constellation, key=lambda c : c[2])
-    # print("Sorted Constellation: ", sorted_constellation)
     filter_idx = len(sorted_constellation) * THRESH
     return sorted_constellation[int(filter_idx):]
 
@@ -188,8 +188,9 @@ def processing_pipeline(AUDIO_FILE_PATH: str):
 
 
     # Optional: visualize waveform
-    print("Visualizing Audio....")
-    viz_wave(audio)
+    if SHOW_VIZ:
+        print("Visualizing Audio....")
+        viz_wave(audio)
 
     print("Computing mel spectrogram...")
     n_fft = 2048
@@ -205,9 +206,9 @@ def processing_pipeline(AUDIO_FILE_PATH: str):
         power=2.0,  # power mel-spectrogram
     )
     print("Mel spectrogram shape:", S_mel_db.shape)
-
-    print("Visualizing mel spectrogram...")
-    viz_mel_spectrogram(S_mel_db, sr=sample_rate, hop_length=hop_length, show_db=SHOW_DB)
+    if SHOW_VIZ:
+        print("Visualizing mel spectrogram...")
+        viz_mel_spectrogram(S_mel_db, sr=sample_rate, hop_length=hop_length, show_db=SHOW_DB)
 
     S_mel = compute_mel_spectrogram(
         audio,
@@ -225,15 +226,18 @@ def processing_pipeline(AUDIO_FILE_PATH: str):
     WINDOW_SIZE = 15
     constellation = compute_constellations(S_mel, WINDOW_SIZE)
 
-    print("Visualizing constellation")
-    viz_constellation(constellation)
+    if SHOW_VIZ:
+        print("Visualizing constellation")
+        viz_constellation(constellation)
 
     THRESHOLD = 0.2 # drop 20% of peaks
     filtered_constellations = filter_constellation(constellation, THRESHOLD)
 
     print("Length of filtered constellation: ", len(filtered_constellations))
-    print("Visualizing filtered constellation...........")
-    viz_constellation(filtered_constellations)
+    
+    if SHOW_VIZ:
+        print("Visualizing filtered constellation...........")
+        viz_constellation(filtered_constellations)
 
     TIME_WINDOW = 5
     print("Commencing finderprinting process.....")
@@ -281,12 +285,10 @@ def evaluate(query_hashes, hash_fingerprints):
     return res
     
 
-
-def main():
-
+def predict():
     print("Commencing processing phase...................")
 
-    AUDIO_DIR = "/home/blitz/Desktop/audio-fingerprinting/training"
+    AUDIO_DIR = "/home/blitz/Desktop/audio-fingerprinting/app/uploads"
     for filename in os.listdir(AUDIO_DIR):
         AUDIO_FILE_PATH = os.path.join(AUDIO_DIR, filename)
         print("Procssing audio file: ", AUDIO_FILE_PATH)
@@ -299,149 +301,39 @@ def main():
     print("Prediction Pipeline Commencing.....")
 
     print("Enter query audio sample")
-    QUERY_SAMPLE = "/home/blitz/Desktop/audio-fingerprinting/training/whistling.wav"
-    query_hashes = processing_pipeline(QUERY_SAMPLE)
+    QUERY_DIR = "/home/blitz/Desktop/audio-fingerprinting/training/smoke_alarm.wav"
+    for filename in os.listdir(QUERY_DIR):
+        QUERY_SAMPLE = os.path.join(QUERY_DIR, filename)
+        query_hashes = processing_pipeline(QUERY_SAMPLE)
 
-    print("Starting evaluation......")
-    results = evaluate(query_hashes, hash_fingerprints)
-
-    if results is None:
-        print("No macthes found :(")
-        return
-    
-    for res in results:
-        song_id = res[0]
-        pred_prob = res[1]
-        print("The identified song is: ", audio_db[song_id], "with song id : ", song_id, " with a probablity of ", pred_prob)
+        print("Starting evaluation......")
+        results = evaluate(query_hashes, hash_fingerprints)
+        response = []
+        if results is None:
+            print("No matches found :(")
+            return
         
-    # AUDIO_FILE_PATH = "/home/blitz/Desktop/audio-fingerprinting/whistling.wav"
-    # print("Reading in audio file...")
-    # sample_rate, audio = read_audio_file(AUDIO_FILE_PATH)
-    # if sample_rate is None or audio is None:
-    #     return
-    # global audio_id
-    # audio_id += 1
-    # print("Sample Rate:", sample_rate)
-    # print("Audio Data Shape:", audio.shape)
+        for res in results:
+            song_id = res[0]
+            pred_prob = res[1]
+            print(f"\nThe identified song is: {audio_db[song_id]} with song id: {song_id} with a probability of {pred_prob:.5f}")
+            response.append({
+                "audio_id" : song_id,
+                "label": audio_db[song_id],
+                "probablity": pred_prob
+            })
 
-    # song_name = AUDIO_FILE_PATH.split('/')[-1]
-    # audio_db[audio_id] = song_name
-    # # Optional: visualize waveform
-    # # viz_wave(audio)
+    global audio_id
+    auto_id = 0
 
-    # print("Computing mel spectrogram...")
-    # n_fft = 2048
-    # hop_length = 512
-    # n_mels = 128
+    global audio_db 
+    audio_db = dict()
+    global hash_fingerprints
+    hash_fingerprints = defaultdict(list)
+    return response
 
-    # S_mel_db = compute_mel_spectrogram(
-    #     audio,
-    #     sr=sample_rate,
-    #     n_fft=n_fft,
-    #     hop_length=hop_length,
-    #     n_mels=n_mels,
-    #     power=2.0,  # power mel-spectrogram
-    # )
-    # print("Mel spectrogram shape:", S_mel_db.shape)
-
-    # # print("Visualizing mel spectrogram...")
-    # # viz_mel_spectrogram(S_mel_db, sr=sample_rate, hop_length=hop_length, show_db=SHOW_DB)
-
-    # S_mel = compute_mel_spectrogram(
-    #     audio,
-    #     sr=sample_rate,
-    #     n_fft=n_fft,
-    #     hop_length=hop_length,
-    #     n_mels=n_mels,
-    #     power=1.0,  # linear mel-spectrogram
-    # )
-
-    # times = librosa.frames_to_time(np.arange(S_mel.shape[1]), sr=sample_rate, hop_length=hop_length)
-    # freq = librosa.mel_frequencies(np.arange(S_mel.shape[0]), fmin=0, fmax=sample_rate/2)
-
-    # print("Calculating constellation peaks......")
-    # WINDOW_SIZE = 15
-    # constellation = compute_constellations(S_mel, WINDOW_SIZE)
-
-    # print("Visualizing constellation")
-    # viz_constellation(constellation)
-
-    # THRESHOLD = 0.2 # drop 20% of peaks
-    # filtered_constellations = filter_constellation(constellation, THRESHOLD)
-
-    # print("Length of filtered constellation: ", len(filtered_constellations))
-    # print("Visualizing filtered constellation...........")
-    # viz_constellation(filtered_constellations)
-
-    # TODO: Error here, figure it out 
-    # filtered_constellations, times, freq, audio_id =  processing()
-
-    # TIME_WINDOW = 5
-    # print("Commencing finderprinting process.....")
-    # create_fingerprint(hash_fingerprints, filtered_constellations, times, freq, TIME_WINDOW, audio_id)
-    # print("Fingerprinting completed............")
-
-
-    # print("Reading in query audio file...")
-    # sample_rate, query_audio = read_audio_file(QUERY_SAMPLE)
-    # if sample_rate is None or query_audio is None:
-    #     return
-    # print("Sample Rate:", sample_rate)
-    # print("Audio Data Shape:", query_audio.shape)
-
-    # # Optional: visualize waveform
-    # viz_wave(query_audio)
-
-    # print("Computing mel spectrogram...")
-    # n_fft = 2048
-    # hop_length = 512
-    # n_mels = 128
-
-    # S_mel_db = compute_mel_spectrogram(
-    #     query_audio,
-    #     sr=sample_rate,
-    #     n_fft=n_fft,
-    #     hop_length=hop_length,
-    #     n_mels=n_mels,
-    #     power=2.0,  # power mel-spectrogram
-    # )
-    # print("Mel spectrogram shape:", S_mel_db.shape)
-
-    # print("Visualizing mel spectrogram...")
-    # viz_mel_spectrogram(S_mel_db, sr=sample_rate, hop_length=hop_length, show_db=SHOW_DB)
-
-    # S_mel_query = compute_mel_spectrogram(
-    #     query_audio,
-    #     sr=sample_rate,
-    #     n_fft=n_fft,
-    #     hop_length=hop_length,
-    #     n_mels=n_mels,
-    #     power=1.0,  # linear mel-spectrogram
-    # )
-
-    # times = librosa.frames_to_time(np.arange(S_mel_query.shape[1]), sr=sample_rate, hop_length=hop_length)
-    # freq = librosa.mel_frequencies(np.arange(S_mel_query.shape[0]), fmin=0, fmax=sample_rate/2)
-
-    # print("Calculating constellation peaks......")
-    # WINDOW_SIZE = 15
-    # constellation = compute_constellations(S_mel_query, WINDOW_SIZE)
-
-    # print("Visualizing constellation")
-    # viz_constellation(constellation)
-
-    # THRESHOLD = 0.2 # drop 20% of peaks
-    # filtered_constellations_query = filter_constellation(constellation, THRESHOLD)
-
-    # print("Length of filtered constellation: ", len(filtered_constellations_query))
-    # print("Visualizing filtered constellation...........")
-    # viz_constellation(filtered_constellations_query)
-
-    # print("Commencing finderprinting process.....")
-    # create_fingerprint(query_hash_fingerprints, filtered_constellations, times, freq, TIME_WINDOW, 0)
-    # print("Fingerprinting completed............")
-
-
-
-
+def main():
+    predict()
+    
 if __name__ == "__main__":
     main()
