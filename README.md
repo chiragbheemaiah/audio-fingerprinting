@@ -1,8 +1,3 @@
-Here’s a more concise and professional version of your **README.md**, written in a clear technical tone without emojis or excess formatting:
-
----
-
-````markdown
 # Identifying Audio Snippets by Their Signatures
 
 This project implements an audio fingerprinting system that identifies short audio clips by matching their spectral signatures against a stored library. It combines traditional signal processing methods with a lightweight web interface built using FastAPI and Bootstrap.
@@ -75,5 +70,4 @@ project/
 
 * Avery Li-Chun Wang, *An Industrial Strength Audio Search Algorithm (Shazam)*
 
-```
 
