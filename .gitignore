@@ -1,3 +1,39 @@
-training/*
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
 
-app/uploads/*
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local development
+.python-version
+main.py
+
+# Application uploads and temporary files
+app/uploads/*.wav
+app/query/*.wav
+uploads/
+query/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# UV / Poetry
+uv.lock
+poetry.lock
