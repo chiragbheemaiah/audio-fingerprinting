@@ -39,15 +39,28 @@ The backend uses `librosa` for audio analysis and fingerprint generation.
 
 1. **Install dependencies**
 
+   Using `uv` (recommended):
    ```bash
-   pip install fastapi uvicorn librosa matplotlib jinja2
+   uv sync
+   ```
+
+   Or using `pip`:
+   ```bash
+   pip install -e .
    ```
 
 2. **Start the server**
 
+   With `uv`:
    ```bash
-   uvicorn server:app --reload
+   uv run uvicorn app.server:app --reload
    ```
+
+   Or directly:
+   ```bash
+   uvicorn app.server:app --reload
+   ```
+
 
 3. **Access the web interface**
    Open your browser and go to:

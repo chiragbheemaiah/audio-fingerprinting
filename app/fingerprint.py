@@ -15,7 +15,7 @@ hash_fingerprints = defaultdict(list) # (f2, f1, (t2-t1)) -> audio_id
 # query_hash_fingerprints = defaultdict(list)
 def reset():
     global audio_id
-    auto_id = 0
+    audio_id = 0
     global audio_db 
     audio_db = dict()
     global hash_fingerprints
